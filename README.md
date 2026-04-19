@@ -2,7 +2,7 @@
 
 **A raw, nasty 6581 SID emulator for nanoTracker.**
 
-This is a simple but faithful single-voice Commodore 64 SID instrument. No fluff, no overcomplicated features — just the core nasty character of the real 6581 chip.
+This is a simple single-voice Commodore 64 SID instrument. No fluff, no overcomplicated features — just the core nasty character of the real 6581 chip.
 
 ### Features
 
@@ -40,7 +40,7 @@ Crank **DIS** and **CRN** for maximum 6581 nastiness. Turn them down if you want
 
 ### Philosophy
 
-This plugin is intentionally minimal. The real SID was never "perfect" — it was raw, unstable, and full of character. That’s what we aimed for.
+This plugin is intentionally minimal. The real SID was never "perfect" — it was raw, unstable, and full of character. That’s what I aimed for.
 
 Noise is completely independent and uses pure white noise. The other waveforms get the classic SID crunch and distortion.
 
@@ -49,6 +49,32 @@ Noise is completely independent and uses pure white noise. The other waveforms g
 - Built with love by the-bimbly1 with debugging assistance from xAI SuperGrok
 - Inspired by the legendary Commodore 64 SID 6581
 - Made for nanoTracker by Savannah (savannah-i-g)
+
+---
+
+## Version History
+### v0.9.1 (Current)
+
+- Noise channel (Waveform 3) now properly responds to played note frequency
+- Low notes are dark/rumbling, high notes are bright/hissy with a smooth, usable spread across the keyboard
+- Noise is fully independent from oscillator by using Math.random() for clean generation
+- Minor envelope and filter tweaks for better overall response
+
+### v0.9
+
+- Added user-controllable crunch parameters: DIS (Distortion) and CRN (Crunch)
+- Improved release behavior with sharper dirt cutoff to reduce unwanted trailing echo tail
+- General stability and sound quality improvements
+
+### v0.8
+
+- Simplified to 4 core waveforms (Triangle, Saw, Pulse, Noise)
+- Clean single-voice layout
+- Basic envelope, filter, and pulse width controls
+
+### v0.7 and earlier
+
+- Initial per-voice experiments, unison mode, monophonic glide, and early crunch attempts
 
 ---
 
