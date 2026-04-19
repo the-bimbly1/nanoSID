@@ -17,11 +17,7 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
     this.cutoff = 3000;
     this.resonance = 0.4;
 
-    this.dis = 5.0;   // Distortion 0-10
-    this.crn = 5.0;   // Crunch 0-10
-
-    this.filterLP1 = 0;
-    this.filterLP2 = 0;
+    this.filterLP = 0;
 
     this.port.onmessage = (e) => this._onMessage(e.data);
   }
@@ -46,8 +42,6 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
         case "release":    this.release = msg.value; break;
         case "cutoff":     this.cutoff = msg.value; break;
         case "resonance":  this.resonance = msg.value; break;
-        case "dis":        this.dis = msg.value; break;
-        case "crn":        this.crn = msg.value; break;
       }
     }
   }
@@ -57,25 +51,12 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
     if (!output) return true;
 
     for (let i = 0; i < output.length; i++) {
-      // Envelope with sharp dirt cutoff on release
       let target = 0;
       let speed = 0.015;
-      let dirtSpeed = 0.015;
-
-      if (this.envState === 0) { 
-        target = 1; 
-        speed = 1 / (this.attack * sampleRate * 0.4 + 1); 
-      } else if (this.envState === 1) { 
-        target = this.sustain; 
-        speed = 1 / (this.decay * sampleRate * 0.4 + 1); 
-      } else if (this.envState === 2) { 
-        target = this.sustain; 
-        speed = 0; 
-      } else { 
-        target = 0; 
-        speed = 1 / (this.release * sampleRate * 0.18 + 1); 
-        dirtSpeed = 1 / (this.release * sampleRate * 0.08 + 1); // sharper for dirt
-      }
+      if (this.envState === 0) { target = 1; speed = 1 / (this.attack * sampleRate * 0.4 + 1); }
+      else if (this.envState === 1) { target = this.sustain; speed = 1 / (this.decay * sampleRate * 0.4 + 1); }
+      else if (this.envState === 2) { target = this.sustain; speed = 0; }
+      else { target = 0; speed = 1 / (this.release * sampleRate * 0.18 + 1); }
 
       this.envLevel += (target - this.envLevel) * speed;
 
@@ -86,42 +67,43 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
       let sample = 0;
 
       if (this.envLevel > 0.001) {
-        this.phase = (this.phase + this.freq / sampleRate) % 1;
+        if (this.waveform === 3) {
+          // Strong exponential scaling stretched from old C2→C0 to old C7→C9
+          const oldLow = 65.41;   // old C2
+          const oldHigh = 2093.0; // old C7
+          const newLow = 16.35;   // target C0
+          const newHigh = 8372.0; // target C9
 
-        let osc = 0;
-        switch (this.waveform) {
-          case 0: osc = this.phase < 0.5 ? this.phase * 4 - 1 : 3 - this.phase * 4; break;
-          case 1: osc = this.phase * 2 - 1; break;
-          case 2: osc = this.phase < this.pulsewidth ? 1 : -1; break;
-          case 3: // Pure Noise
-            sample = (Math.random() * 2 - 1) * this.envLevel * 0.95;
-            break;
-        }
+          let normalized = Math.log(this.freq / oldLow) / Math.log(oldHigh / oldLow);
+          normalized = Math.max(0, Math.min(1, normalized));
 
-        if (this.waveform !== 3) {
-          // Crunch controlled by DIS and CRN
-          let distortion = 1.0 + this.dis * 0.38;
-          osc = Math.tanh(osc * distortion);
-          osc += Math.sin(osc * 14) * (this.crn * 0.028);
+          const targetSpeed = newLow * Math.pow(newHigh / newLow, normalized);
 
-          // Sharp dirt cutoff during release
-          let dirtLevel = this.envLevel;
-          if (this.envState === 3) dirtLevel = Math.pow(this.envLevel, 2.5); // much faster drop
+          // Use targetSpeed to control how often we update the random value
+          const updateRate = targetSpeed / 440; // normalize
 
-          sample = osc * dirtLevel * 0.48;
+          if (Math.random() < updateRate * 0.3) {
+            this.noiseValue = (Math.random() * 2 - 1);
+          }
+
+          sample = (this.noiseValue || (Math.random() * 2 - 1)) * this.envLevel * 0.93;
+        } else {
+          this.phase = (this.phase + this.freq / sampleRate) % 1;
+
+          let osc = 0;
+          switch (this.waveform) {
+            case 0: osc = this.phase < 0.5 ? this.phase * 4 - 1 : 3 - this.phase * 4; break;
+            case 1: osc = this.phase * 2 - 1; break;
+            case 2: osc = this.phase < this.pulsewidth ? 1 : -1; break;
+          }
+          sample = osc * this.envLevel * 0.35;
         }
       }
 
-      // Filter
       const f = Math.min(0.96, this.cutoff / (sampleRate * 0.5));
-      const r = this.resonance * 2.8;
-      this.filterLP1 = this.filterLP1 * (1 - f) + sample * f;
-      this.filterLP2 = this.filterLP2 * (1 - f) + this.filterLP1 * f;
-      sample = this.filterLP2 + this.filterLP2 * r * 0.16;
+      this.filterLP = this.filterLP * (1 - f) + sample * f;
 
-      const crushed = Math.round(sample * 26) / 26;
-
-      output[i] = crushed * 0.74;
+      output[i] = this.filterLP * 0.78;
     }
     return true;
   }
