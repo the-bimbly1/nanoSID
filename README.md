@@ -18,16 +18,16 @@ This is a simple single-voice Commodore 64 SID instrument. No fluff, no overcomp
 
 | Knob     | Label | Range      | What it does |
 |----------|-------|------------|--------------|
-| WAVE     | WAVE  | 0–3        | 0 = Triangle, 1 = Saw, 2 = Pulse, 3 = Noise |
-| PW       | PW    | 0–1        | Pulse width (affects Pulse only)            |
-| ATT      | ATT   | 0–2s       | Attack time                                 |
-| DEC      | DEC   | 0–3s       | Decay time                                  |
-| SUS      | SUS   | 0–1        | Sustain level                               |
-| REL      | REL   | 0–4s       | Release time                                |
-| CUT      | CUT   | 100–12k Hz | Filter cutoff                               |
-| RES      | RES   | 0–0.95     | Filter resonance                            |
-| DIS      | DIS   | 0–10       | Distortion / waveshaping intensity          |
-| CRN      | CRN   | 0–10       | Extra harmonic crunch & filter dirt         |
+| WAVE     | WAVE  | 0–7        | 0=Triangle, 1=Saw, 2=Pulse, 3=Noise, 4=Tri+Saw, 5=Tri+Pulse, 6=Saw+Pulse, 7=All |
+| PW       | PW    | 0–1        | Pulse width (affects Pulse only)                                                |
+| ATT      | ATT   | 0–2s       | Attack time                                                                     |
+| DEC      | DEC   | 0–3s       | Decay time                                                                      |
+| SUS      | SUS   | 0–1        | Sustain level                                                                   |
+| REL      | REL   | 0–4s       | Release time                                                                    |
+| CUT      | CUT   | 100–12k Hz | Filter cutoff                                                                   |
+| RES      | RES   | 0–0.95     | Filter resonance                                                                |
+| DIS      | DIS   | 0–10       | Distortion / waveshaping intensity                                              |
+| CRN      | CRN   | 0–10       | Extra harmonic crunch & filter dirt                                             |
 
 ### How to use
 
@@ -53,26 +53,33 @@ Noise is completely independent and uses pure white noise. The other waveforms g
 ---
 
 ## Version History
-### v0.9.1 (Current)
+
+**v0.9.2** (Current)
+- Added combined waveforms (0–7): Tri+Saw, Tri+Pulse, Saw+Pulse, All
+- Improved noise channel with better frequency response across the keyboard
+- Release default changed to 0.10 for tighter, more responsive playing
+- General stability and sound quality improvements
+
+**v0.9.1**
 
 - Noise channel (Waveform 3) now properly responds to played note frequency
 - Low notes are dark/rumbling, high notes are bright/hissy with a smooth, usable spread across the keyboard
 - Noise is fully independent from oscillator by using Math.random() for clean generation
 - Minor envelope and filter tweaks for better overall response
 
-### v0.9
+**v0.9**
 
 - Added user-controllable crunch parameters: DIS (Distortion) and CRN (Crunch)
 - Improved release behavior with sharper dirt cutoff to reduce unwanted trailing echo tail
 - General stability and sound quality improvements
 
-### v0.8
+**v0.8**
 
 - Simplified to 4 core waveforms (Triangle, Saw, Pulse, Noise)
 - Clean single-voice layout
 - Basic envelope, filter, and pulse width controls
 
-### v0.7 and earlier
+**v0.7 and earlier**
 
 - Initial per-voice experiments, unison mode, monophonic glide, and early crunch attempts
 

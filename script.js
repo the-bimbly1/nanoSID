@@ -8,7 +8,7 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
     this.envLevel = 0;
     this.envState = 3;
 
-    this.waveform = 1;
+    this.waveform = 1;      // 0=Triangle, 1=Saw, 2=Pulse, 3=Noise, 4=Tri+Saw, 5=Tri+Pulse, 6=Saw+Pulse, 7=All
     this.pulsewidth = 0.5;
     this.attack = 0.01;
     this.decay = 0.3;
@@ -17,7 +17,11 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
     this.cutoff = 3000;
     this.resonance = 0.4;
 
-    this.filterLP = 0;
+    this.dis = 5.0;   // Distortion 0-10
+    this.crn = 5.0;   // Crunch 0-10
+
+    this.filterLP1 = 0;
+    this.filterLP2 = 0;
 
     this.port.onmessage = (e) => this._onMessage(e.data);
   }
@@ -42,6 +46,8 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
         case "release":    this.release = msg.value; break;
         case "cutoff":     this.cutoff = msg.value; break;
         case "resonance":  this.resonance = msg.value; break;
+        case "dis":        this.dis = msg.value; break;
+        case "crn":        this.crn = msg.value; break;
       }
     }
   }
@@ -51,6 +57,7 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
     if (!output) return true;
 
     for (let i = 0; i < output.length; i++) {
+      // Envelope with sharp dirt cutoff on release
       let target = 0;
       let speed = 0.015;
       if (this.envState === 0) { target = 1; speed = 1 / (this.attack * sampleRate * 0.4 + 1); }
@@ -67,43 +74,61 @@ class NanoSIDProcessor extends AudioWorkletProcessor {
       let sample = 0;
 
       if (this.envLevel > 0.001) {
-        if (this.waveform === 3) {
-          // Strong exponential scaling stretched from old C2→C0 to old C7→C9
-          const oldLow = 65.41;   // old C2
-          const oldHigh = 2093.0; // old C7
-          const newLow = 16.35;   // target C0
-          const newHigh = 8372.0; // target C9
+        this.phase = (this.phase + this.freq / sampleRate) % 1;
 
-          let normalized = Math.log(this.freq / oldLow) / Math.log(oldHigh / oldLow);
-          normalized = Math.max(0, Math.min(1, normalized));
+        let osc = 0;
 
-          const targetSpeed = newLow * Math.pow(newHigh / newLow, normalized);
+        // Generate base waveforms
+        let tri = this.phase < 0.5 ? this.phase * 4 - 1 : 3 - this.phase * 4;
+        let saw = this.phase * 2 - 1;
+        let pulse = this.phase < this.pulsewidth ? 1 : -1;
 
-          // Use targetSpeed to control how often we update the random value
-          const updateRate = targetSpeed / 440; // normalize
+        const w = this.waveform;
 
-          if (Math.random() < updateRate * 0.3) {
+        if (w === 0) {
+          osc = tri;
+        } else if (w === 1) {
+          osc = saw;
+        } else if (w === 2) {
+          osc = pulse;
+        } else if (w === 3) {
+          // Pure Noise - frequency responsive
+          const speedFactor = Math.pow(this.freq / 261.63, 1.65);
+          if (Math.random() < speedFactor * 0.25) {
             this.noiseValue = (Math.random() * 2 - 1);
           }
-
           sample = (this.noiseValue || (Math.random() * 2 - 1)) * this.envLevel * 0.93;
-        } else {
-          this.phase = (this.phase + this.freq / sampleRate) % 1;
+        } else if (w === 4) { // Tri + Saw
+          osc = (tri * 0.6) + (saw * 0.6);
+        } else if (w === 5) { // Tri + Pulse
+          osc = (tri * 0.6) + (pulse * 0.6);
+        } else if (w === 6) { // Saw + Pulse
+          osc = (saw * 0.6) + (pulse * 0.6);
+        } else if (w === 7) { // All three
+          osc = (tri * 0.45) + (saw * 0.45) + (pulse * 0.45);
+        }
 
-          let osc = 0;
-          switch (this.waveform) {
-            case 0: osc = this.phase < 0.5 ? this.phase * 4 - 1 : 3 - this.phase * 4; break;
-            case 1: osc = this.phase * 2 - 1; break;
-            case 2: osc = this.phase < this.pulsewidth ? 1 : -1; break;
-          }
-          sample = osc * this.envLevel * 0.35;
+        if (this.waveform !== 3) {
+          // Apply distortion and crunch
+          let distortion = 1.0 + this.dis * 0.38;
+          osc = Math.tanh(osc * distortion);
+          osc += Math.sin(osc * 14) * (this.crn * 0.028);
+
+          sample = osc * this.envLevel * 0.48;
         }
       }
 
+      // Filter
       const f = Math.min(0.96, this.cutoff / (sampleRate * 0.5));
-      this.filterLP = this.filterLP * (1 - f) + sample * f;
+      const r = this.resonance * 2.8;
+      this.filterLP1 = this.filterLP1 * (1 - f) + sample * f;
+      this.filterLP2 = this.filterLP2 * (1 - f) + this.filterLP1 * f;
+      sample = this.filterLP2 + this.filterLP2 * r * 0.16;
 
-      output[i] = this.filterLP * 0.78;
+      // Bit-crush
+      const crushed = Math.round(sample * 26) / 26;
+
+      output[i] = crushed * 0.74;
     }
     return true;
   }
