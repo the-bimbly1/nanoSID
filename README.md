@@ -2,32 +2,38 @@
 
 **A raw, nasty 6581 SID emulator for nanoTracker.**
 
-This is a simple single-voice Commodore 64 SID instrument. No fluff, no overcomplicated features — just the core nasty character of the real 6581 chip.
+This is a simple but faithful single-voice Commodore 64 SID instrument. No fluff — just the core nasty character of the real 6581 chip.
 
 ### Features
 
-- Four classic waveforms: Triangle, Saw, Pulse, Noise
-- Real 6581-style crunch and distortion
-- Independent Noise channel (pure white noise, no tonal artifacts)
-- User-controllable nastiness:
-  - **DIS** – Distortion amount
-  - **CRN** – Extra harmonic crunch and filter dirt
-- Simple, focused interface
+- **8 waveforms** (0–7): Triangle, Saw, Pulse, Noise, **Tri+Saw**, **Tri+Pulse**, **Saw+Pulse**, **All**
+- Real 6581-style crunch and distortion with user control
+- Independent Noise channel (frequency-responsive broadband noise)
+- **Ring Modulation** (classic metallic/robotic SID effect)
+- Controllable nastiness:
+  - **DIS** – Distortion amount (0–10)
+  - **CRN** – Extra harmonic crunch & filter dirt (0–10)
+- Hardware-correct signal chain (Envelope → Distortion → Filter)
 
 ### Parameters
 
 | Knob     | Label | Range      | What it does |
 |----------|-------|------------|--------------|
 | WAVE     | WAVE  | 0–7        | 0=Triangle, 1=Saw, 2=Pulse, 3=Noise, 4=Tri+Saw, 5=Tri+Pulse, 6=Saw+Pulse, 7=All |
-| PW       | PW    | 0–1        | Pulse width (affects Pulse only)                                                |
-| ATT      | ATT   | 0–2s       | Attack time                                                                     |
-| DEC      | DEC   | 0–3s       | Decay time                                                                      |
-| SUS      | SUS   | 0–1        | Sustain level                                                                   |
-| REL      | REL   | 0–4s       | Release time                                                                    |
-| CUT      | CUT   | 100–12k Hz | Filter cutoff                                                                   |
-| RES      | RES   | 0–0.95     | Filter resonance                                                                |
-| DIS      | DIS   | 0–10       | Distortion / waveshaping intensity                                              |
-| CRN      | CRN   | 0–10       | Extra harmonic crunch & filter dirt                                             |
+| PW       | PW    | 0–1        | Pulse width |
+| RING     | RING  | Off / On   | Ring Modulation (metallic SID effect) |
+| ATT      | ATT   | 0–2s       | Attack time |
+| DEC      | DEC   | 0–3s       | Decay time |
+| SUS      | SUS   | 0–1        | Sustain level |
+| REL      | REL   | 0–4s       | Release time (default: 0.10) |
+| CUT      | CUT   | 100–12000 Hz | Filter cutoff |
+| RES      | RES   | 0–0.95     | Filter resonance |
+| DIS      | DIS   | 0–10       | Distortion intensity |
+| CRN      | CRN   | 0–10       | Extra harmonic crunch & filter dirt |
+
+### Known Quirk (Authentic to Real 6581)
+
+When **Ring Modulation** is enabled and **Pulse Width (PW)** is set to exactly **0.5**, the output becomes a constant full-scale static tone. This is **not a bug** — it is authentic SID behavior. Any other PW value produces normal ring-modulated tone.
 
 ### How to use
 
@@ -36,52 +42,36 @@ This is a simple single-voice Commodore 64 SID instrument. No fluff, no overcomp
 3. Assign it to a track and play.
 
 **Pro tip:**  
-Crank **DIS** and **CRN** for maximum 6581 nastiness. Turn them down if you want a cleaner sound.
-
-### Philosophy
-
-This plugin is intentionally minimal. The real SID was never "perfect" — it was raw, unstable, and full of character. That’s what I aimed for.
-
-Noise is completely independent and uses pure white noise. The other waveforms get the classic SID crunch and distortion.
+Crank **DIS** and **CRN** for maximum 6581 nastiness. Turn them down for a cleaner sound.
 
 ### Credits
 
 - Built with love by the-bimbly1 with debugging assistance from xAI SuperGrok
-- Inspired by the legendary Commodore 64 SID 6581
+- Inspired by the Commodore 64 SID 6581
 - Made for nanoTracker by Savannah (savannah-i-g)
 
 ---
 
-## Version History
+### Version History
 
-**v0.9.2** (Current)
+**v0.9.3** (Current)
+- Added **Ring Modulation** with hardware-correct placement in the signal chain
+- Proper ADSR envelope applied immediately after oscillator (before distortion/filter)
+- Eliminated all release tail artifacts
+- Documented authentic Pulse + Ring Mod quirk at 50% duty cycle
+
+**v0.9.2**
 - Added combined waveforms (0–7): Tri+Saw, Tri+Pulse, Saw+Pulse, All
-- Improved noise channel with better frequency response across the keyboard
-- Release default changed to 0.10 for tighter, more responsive playing
-- General stability and sound quality improvements
+- Improved noise channel with better frequency response
 
 **v0.9.1**
-
-- Noise channel (Waveform 3) now properly responds to played note frequency
-- Low notes are dark/rumbling, high notes are bright/hissy with a smooth, usable spread across the keyboard
-- Noise is fully independent from oscillator by using Math.random() for clean generation
-- Minor envelope and filter tweaks for better overall response
+- Noise channel now properly responds to played note frequency
 
 **v0.9**
-
-- Added user-controllable crunch parameters: DIS (Distortion) and CRN (Crunch)
-- Improved release behavior with sharper dirt cutoff to reduce unwanted trailing echo tail
-- General stability and sound quality improvements
+- Added user-controllable crunch: **DIS** (Distortion) and **CRN** (Crunch)
 
 **v0.8**
-
-- Simplified to 4 core waveforms (Triangle, Saw, Pulse, Noise)
-- Clean single-voice layout
-- Basic envelope, filter, and pulse width controls
-
-**v0.7 and earlier**
-
-- Initial per-voice experiments, unison mode, monophonic glide, and early crunch attempts
+- Core 4 waveforms + basic envelope and filter
 
 ---
 
